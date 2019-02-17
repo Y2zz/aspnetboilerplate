@@ -21,10 +21,10 @@ namespace Abp.Zero.SampleApp.Tests
 {
     public abstract class SampleAppTestBase : SampleAppTestBase<SampleAppTestModule>
     {
-        
+
     }
 
-    public abstract class SampleAppTestBase<TModule> : AbpIntegratedTestBase<TModule> 
+    public abstract class SampleAppTestBase<TModule> : AbpIntegratedTestBase<TModule>
         where TModule : AbpModule
     {
         protected readonly RoleManager RoleManager;
@@ -130,17 +130,18 @@ namespace Abp.Zero.SampleApp.Tests
         protected async Task<User> CreateUser(string userName)
         {
             var user = new User
-                       {
-                           TenantId = AbpSession.TenantId,
-                           UserName = userName,
-                           Name = userName,
-                           Surname = userName,
-                           EmailAddress = userName + "@aspnetboilerplate.com",
-                           IsEmailConfirmed = true,
-                           Password = "AM4OLBpptxBYmM79lGOX9egzZk3vIQU3d/gFCJzaBjAPXzYIK3tQ2N7X4fcrHtElTw==" //123qwe
-                       };
+            {
+                TenantId = AbpSession.TenantId,
+                UserName = userName,
+                Name = userName,
+                Surname = userName,
+                EmailAddress = userName + "@aspnetboilerplate.com",
+                IsEmailConfirmed = true,
+                Password = "AM4OLBpptxBYmM79lGOX9egzZk3vIQU3d/gFCJzaBjAPXzYIK3tQ2N7X4fcrHtElTw==" //123qwe
+            };
 
-            (await UserManager.CreateAsync(user)).CheckErrors();
+
+            await WithUnitOfWorkAsync(async () => (await UserManager.CreateAsync(user)).CheckErrors());
 
             await UsingDbContext(async context =>
             {

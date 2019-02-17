@@ -48,6 +48,8 @@ namespace Abp.Authorization.Users
 
         public ILocalizationManager LocalizationManager { get; }
 
+        protected string LocalizationSourceName { get; set; }
+
         public IAbpSession AbpSession { get; set; }
 
         public FeatureDependencyContext FeatureDependencyContext { get; set; }
@@ -84,6 +86,7 @@ namespace Abp.Authorization.Users
             AbpStore = userStore;
             RoleManager = roleManager;
             LocalizationManager = localizationManager;
+            LocalizationSourceName = AbpZeroConsts.LocalizationSourceName;
             _settingManager = settingManager;
 
             _permissionManager = permissionManager;
@@ -106,6 +109,8 @@ namespace Abp.Authorization.Users
 
         public override async Task<IdentityResult> CreateAsync(TUser user)
         {
+            user.SetNormalizedNames();
+
             var result = await CheckDuplicateUsernameOrEmailAddressAsync(user.Id, user.UserName, user.EmailAddress);
             if (!result.Succeeded)
             {
@@ -118,15 +123,9 @@ namespace Abp.Authorization.Users
                 user.TenantId = tenantId.Value;
             }
 
-            var isLockoutEnabled = user.IsLockoutEnabled;
+            InitializeLockoutSettings(user.TenantId);
 
-            var identityResult = await base.CreateAsync(user);
-            if (identityResult.Succeeded)
-            {
-                await SetLockoutEnabledAsync(user.Id, isLockoutEnabled);
-            }
-
-            return identityResult;
+            return await base.CreateAsync(user);
         }
 
         /// <summary>
@@ -348,6 +347,8 @@ namespace Abp.Authorization.Users
 
         public async override Task<IdentityResult> UpdateAsync(TUser user)
         {
+            user.SetNormalizedNames();
+
             var result = await CheckDuplicateUsernameOrEmailAddressAsync(user.Id, user.UserName, user.EmailAddress);
             if (!result.Succeeded)
             {
@@ -702,9 +703,14 @@ namespace Abp.Authorization.Users
                 : _settingManager.GetSettingValueForTenant<T>(settingName, tenantId.Value);
         }
 
-        private string L(string name)
+        protected virtual string L(string name)
         {
-            return LocalizationManager.GetString(AbpZeroConsts.LocalizationSourceName, name);
+            return LocalizationManager.GetString(LocalizationSourceName, name);
+        }
+
+        protected virtual string L(string name, CultureInfo cultureInfo)
+        {
+            return LocalizationManager.GetString(LocalizationSourceName, name, cultureInfo);
         }
 
         private int? GetCurrentTenantId()
